@@ -3,7 +3,7 @@ using Orleans.Clustering.Cosmos.Models;
 
 namespace Orleans.Clustering.Cosmos;
 
-internal class CosmosMembershipTable : IMembershipTable
+internal partial class CosmosMembershipTable : IMembershipTable
 {
     private const string PARTITION_KEY = "/ClusterId";
     private const string CLUSTER_VERSION_ID = "ClusterVersion";
@@ -94,8 +94,9 @@ internal class CosmosMembershipTable : IMembershipTable
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error deleting membership table entries.");
+            LogErrorDeletingMembershipEntries(ex);
             WrappedException.CreateAndRethrow(ex);
+            throw;
         }
     }
 
@@ -120,8 +121,9 @@ internal class CosmosMembershipTable : IMembershipTable
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error cleaning up defunct silo entries.");
+            LogErrorCleaningUpDefunctEntries(ex);
             WrappedException.CreateAndRethrow(ex);
+            throw;
         }
     }
 
@@ -158,7 +160,7 @@ internal class CosmosMembershipTable : IMembershipTable
         }
         catch (Exception exc)
         {
-            _logger.LogWarning(exc, "Failure reading silo entry {Key} for cluster {Cluster}", key, _clusterId);
+            LogWarningFailureReadingSiloEntry(exc, key, _clusterId);
             WrappedException.CreateAndRethrow(exc);
             throw;
         }
@@ -183,7 +185,7 @@ internal class CosmosMembershipTable : IMembershipTable
             }
             else
             {
-                _logger.LogError("Initial ClusterVersionEntity entity does not exist.");
+                LogErrorNoClusterVersionEntity();
             }
 
             var memEntries = new List<Tuple<MembershipEntry, string>>();
@@ -206,7 +208,7 @@ internal class CosmosMembershipTable : IMembershipTable
         }
         catch (Exception exc)
         {
-            _logger.LogWarning(exc, "Failure reading entries for cluster {Cluster}", _clusterId);
+            LogWarningFailureReadingEntries(exc, _clusterId);
             WrappedException.CreateAndRethrow(exc);
             throw;
         }
@@ -302,7 +304,7 @@ internal class CosmosMembershipTable : IMembershipTable
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error initializing Azure Cosmos DB Client for membership table provider.");
+            LogErrorInitializingCosmosClient(ex);
             WrappedException.CreateAndRethrow(ex);
             throw;
         }
@@ -375,7 +377,7 @@ internal class CosmosMembershipTable : IMembershipTable
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error reading Cluster Version entity.");
+            LogErrorReadingClusterVersionEntity(ex);
             WrappedException.CreateAndRethrow(ex);
             throw;
         }
@@ -407,7 +409,7 @@ internal class CosmosMembershipTable : IMembershipTable
         }
         catch (Exception exc)
         {
-            _logger.LogError(exc, "Error reading Silo entities.");
+            LogErrorReadingSiloEntities(exc);
             WrappedException.CreateAndRethrow(exc);
             throw;
         }
@@ -499,4 +501,52 @@ internal class CosmosMembershipTable : IMembershipTable
             ETag = tableVersion.VersionEtag
         };
     }
+
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        Message = "Error initializing Azure Cosmos DB Client for membership table provider."
+    )]
+    private partial void LogErrorInitializingCosmosClient(Exception ex);
+
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        Message = "Error deleting membership table entries."
+    )]
+    private partial void LogErrorDeletingMembershipEntries(Exception ex);
+
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        Message = "Error cleaning up defunct silo entries."
+    )]
+    private partial void LogErrorCleaningUpDefunctEntries(Exception ex);
+
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "Failure reading silo entry {Key} for cluster {Cluster}"
+    )]
+    private partial void LogWarningFailureReadingSiloEntry(Exception exc, SiloAddress key, string cluster);
+
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        Message = "Initial ClusterVersionEntity entity does not exist."
+    )]
+    private partial void LogErrorNoClusterVersionEntity();
+
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "Failure reading entries for cluster {Cluster}"
+    )]
+    private partial void LogWarningFailureReadingEntries(Exception exc, string cluster);
+
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        Message = "Error reading Cluster Version entity."
+    )]
+    private partial void LogErrorReadingClusterVersionEntity(Exception ex);
+
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        Message = "Error reading Silo entities."
+    )]
+    private partial void LogErrorReadingSiloEntities(Exception exc);
 }
