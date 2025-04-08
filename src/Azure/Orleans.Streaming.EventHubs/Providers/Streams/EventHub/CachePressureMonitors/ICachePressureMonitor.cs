@@ -4,7 +4,7 @@ using System;
 namespace Orleans.Streaming.EventHubs
 {
     /// <summary>
-    /// Cache pressure monitor records pressure contribution to the cache, and determine if the cache is under pressure based on its 
+    /// Cache pressure monitor records pressure contribution to the cache, and determine if the cache is under pressure based on its
     /// back pressure algorithm
     /// </summary>
     public interface ICachePressureMonitor

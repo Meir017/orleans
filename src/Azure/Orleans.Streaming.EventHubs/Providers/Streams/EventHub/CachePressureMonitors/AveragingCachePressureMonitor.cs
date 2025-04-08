@@ -9,7 +9,7 @@ namespace Orleans.Streaming.EventHubs
     /// Cache pressure monitor whose back pressure algorithm is based on averaging pressure value
     /// over all pressure contribution
     /// </summary>
-    public class AveragingCachePressureMonitor : ICachePressureMonitor
+    public partial class AveragingCachePressureMonitor : ICachePressureMonitor
     {
         /// <summary>
         /// Cache monitor which is used to report cache related metrics
@@ -86,13 +86,39 @@ namespace Orleans.Streaming.EventHubs
             if (isUnderPressure != wasUnderPressure)
             {
                 this.CacheMonitor?.TrackCachePressureMonitorStatusChange(this.GetType().Name, isUnderPressure, cachePressureContributionCount, pressure, this.flowControlThreshold);
-                if(this.logger.IsEnabled(LogLevel.Debug))
-                    logger.LogDebug(isUnderPressure
-                    ? $"Ingesting messages too fast. Throttling message reading. AccumulatedCachePressure: {accumulatedCachePressure}, Contributions: {cachePressureContributionCount}, AverageCachePressure: {pressure}, Threshold: {flowControlThreshold}"
-                    : $"Message ingestion is healthy. AccumulatedCachePressure: {accumulatedCachePressure}, Contributions: {cachePressureContributionCount}, AverageCachePressure: {pressure}, Threshold: {flowControlThreshold}");
+                if (isUnderPressure)
+                {
+                    LogDebugIngestingMessagesTooFast(
+                        this.accumulatedCachePressure,
+                        this.cachePressureContributionCount,
+                        pressure,
+                        this.flowControlThreshold
+                    );
+                }
+                else
+                {
+                    LogDebugMessageIngestionIsHealthy(
+                        this.accumulatedCachePressure,
+                        this.cachePressureContributionCount,
+                        pressure,
+                        this.flowControlThreshold
+                    );
+                }
             }
             cachePressureContributionCount = 0.0;
             accumulatedCachePressure = 0.0;
         }
+
+        [LoggerMessage(
+            Level = LogLevel.Debug,
+            Message = "Ingesting messages too fast. Throttling message reading. AccumulatedCachePressure: {accumulatedCachePressure}, Contributions: {cachePressureContributionCount}, AverageCachePressure: {pressure}, Threshold: {flowControlThreshold}"
+        )]
+        private partial void LogDebugIngestingMessagesTooFast(double accumulatedCachePressure, double cachePressureContributionCount, double pressure, double flowControlThreshold);
+
+        [LoggerMessage(
+            Level = LogLevel.Debug,
+            Message = "Message ingestion is healthy. AccumulatedCachePressure: {accumulatedCachePressure}, Contributions: {cachePressureContributionCount}, AverageCachePressure: {pressure}, Threshold: {flowControlThreshold}"
+        )]
+        private partial void LogDebugMessageIngestionIsHealthy(double accumulatedCachePressure, double cachePressureContributionCount, double pressure, double flowControlThreshold);
     }
 }
