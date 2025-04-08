@@ -17,7 +17,7 @@ namespace Orleans.Streaming.EventHubs.Testing
     /// This is a persistent stream provider adapter that generates it's own events rather than reading them from Eventhub.
     /// This is primarily for test purposes.
     ///  </summary>
-    public class EventDataGeneratorAdapterFactory : EventHubAdapterFactory, IControllable
+    public partial class EventDataGeneratorAdapterFactory : EventHubAdapterFactory, IControllable
     {
         private readonly EventDataGeneratorStreamOptions ehGeneratorOptions;
 
@@ -81,12 +81,16 @@ namespace Orleans.Streaming.EventHubs.Testing
                 if (EventHubReceivers.TryGetValue(queueToAssign, out var receiverToAssign))
                 {
                     receiverToAssign.ConfigureDataGeneratorForStream(args.StreamId);
-                    logger.LogInformation("Stream {StreamId} is assigned to queue {QueueId}", args.StreamId, queueToAssign);
+                    LogStreamAssignedToQueue(args.StreamId, queueToAssign);
+                }
+                else
+                {
+                    LogCannotGetQueuesInTheCluster();
                 }
             }
             else
             {
-                logger.LogInformation("Cannot get queues in the cluster, current streamQueueMapper is not EventHubQueueMapper");
+                LogCannotGetQueuesInTheCluster();
             }
         }
 
@@ -186,10 +190,16 @@ namespace Orleans.Streaming.EventHubs.Testing
             IEventHubDataAdapter dataAdapter = services.GetKeyedService<IEventHubDataAdapter>(name)
                 ?? services.GetService<IEventHubDataAdapter>()
                 ?? ActivatorUtilities.CreateInstance<EventHubDataAdapter>(services);
-            var factory = ActivatorUtilities.CreateInstance<EventDataGeneratorAdapterFactory>(services, name, generatorOptions, ehOptions, receiverOptions, cacheOptions, 
+            var factory = ActivatorUtilities.CreateInstance<EventDataGeneratorAdapterFactory>(services, name, generatorOptions, ehOptions, receiverOptions, cacheOptions,
                 evictionOptions, statisticOptions, dataAdapter);
             factory.Init();
             return factory;
         }
+
+        [LoggerMessage(Level = LogLevel.Information, Message = "Stream {streamId} is assigned to queue {queueId}")]
+        private partial void LogStreamAssignedToQueue(StreamId streamId, QueueId queueId);
+
+        [LoggerMessage(Level = LogLevel.Information, Message = "Cannot get queues in the cluster, current streamQueueMapper is not EventHubQueueMapper")]
+        private partial void LogCannotGetQueuesInTheCluster();
     }
 }
